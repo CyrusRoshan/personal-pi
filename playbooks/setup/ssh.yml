@@ -1,0 +1,39 @@
+---
+- name: Setup SSH
+  hosts: pre_setup_pis
+  tasks:
+
+  - name: Add current user to pi
+    user:
+      name: "{{ lookup('env', 'USER') }}"
+      comment: "{{ lookup('env', 'USER') }}"
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Sudo without password for current user
+    copy:
+      content: "{{ lookup('env', 'USER') }} ALL=(ALL:ALL) NOPASSWD:ALL"
+      dest: "/etc/sudoers.d/{{ lookup('env', 'USER') }}_nopasswd"
+      mode: 0440
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Add this user's public key for SSH auth
+    authorized_key:
+      user: "{{ lookup('env','USER') }}"
+      state: present
+      key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub' ) }}"
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Disable password auth for SSH
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      line: PasswordAuthentication=no
+      create: yes
+    become: true
+    become_method: sudo
+    become_user: root
