@@ -15,7 +15,7 @@
 
   - name: Add Wifi configuration
     copy:
-      content: >
+      content: |
         ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
         update_config=1
 
