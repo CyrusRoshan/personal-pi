@@ -1,0 +1,130 @@
+---
+- name: Install spotifyd (and TODO shairport-sync)
+  hosts: pis
+  tasks:
+
+  - name: Install deps
+    apt:
+      pkg:
+        - wget
+      state: present
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name:
+    lineinfile:
+      path: /boot/config.txt
+      line: "dtparam=audio=on"
+    become: true
+    become_method: sudo
+    become_user: root
+    register: dtparam_audio
+
+  - name: Add current user to audio group
+    user:
+      name: "{{ ansible_user_id }}"
+      groups: audio
+      append: yes
+    register: audiogroup
+
+  - name: Reboot to apply boot and audio changes
+    reboot:
+    when: dtparam_audio.changed or audiogroup.changed
+
+  - name: Check if spotifyd exists
+    stat:
+      path: /usr/bin/spotifyd
+    register: spotifyd
+
+  - name: Install spotifyd from github
+    shell: >
+      wget https://github.com/Spotifyd/spotifyd/releases/download/v0.2.24/spotifyd-linux-armv6-slim.tar.gz &&
+      tar -xvzf spotifyd-*.tar.gz &&
+      mv spotifyd /usr/bin/spotifyd &&
+      rm -f spotifyd-*.tar.gz
+    when: spotifyd.stat.exists == false
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Create systemd system folder
+    file:
+      path: /etc/systemd/system
+      state: directory
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Add spotifyd unit file
+    copy:
+      content: |
+        [Unit]
+        Description=A spotify playing daemon
+        Documentation=https://github.com/Spotifyd/spotifyd
+        Wants=sound.target
+        After=sound.target
+        Wants=network-online.target
+        After=network-online.target
+
+        [Service]
+        ExecStart=/usr/bin/spotifyd --no-daemon --config-path="/etc/xdg/spotifyd"
+        Restart=always
+        RestartSec=12
+
+        [Install]
+        WantedBy=default.target
+      dest: "/etc/systemd/system/spotifyd.service"
+      mode: "0644"
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Add spotifyd config parent directory
+    file:
+      path: /etc/xdg/
+      state: directory
+
+  - name: Add passwordless spotify config
+    copy:
+      content: |
+        [global]
+        backend = alsa
+        device = default # Given by `aplay -L`
+        mixer = PCM
+        volume-controller = alsa # or alsa_linear, or softvol
+        #onevent = command_run_on_playback_event
+        device_name = "{{ inventory_hostname | replace('_',' ') | capitalize }}"
+        bitrate = 320
+        # cache_path = cache_directory
+        volume-normalisation = true
+        normalisation-pregain = -10
+      dest: "/etc/xdg/spotifyd"
+      mode: "0644"
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Run and enable spotifyd via systemd
+    systemd:
+      enabled: yes
+      state: started
+      name: spotifyd
+    become: true
+    become_method: sudo
+    become_user: root
+    register: spotifyd_systemd
+
+  - name: Get default amixer control
+    shell: "amixer scontrols | grep -o \"'[^']*'\" | head -n 1"
+    register: quoted_amixer_control
+    when: spotifyd_systemd.changed
+
+  - name: Set volume to 100% and save on boot
+    shell: >
+      amixer sset {{ quoted_amixer_control.stdout }} 100% &&
+      /usr/sbin/alsactl store
+    when: quoted_amixer_control.stdout
+    become: true
+    become_method: sudo
+    become_user: root
