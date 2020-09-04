@@ -1,0 +1,45 @@
+---
+- name: Network configuration
+  hosts: pis
+  tasks:
+
+  - name: Clean inventory hostname
+    set_fact:
+      clean_hostname: "{{ inventory_hostname | replace('_','-') }}"
+
+  # Hostname module doesn't work
+  - name: Get old hostname
+    shell: hostname
+    register: old_hostname
+
+  - meta: end_play
+    when: old_hostname.stdout == clean_hostname
+
+  - name: Set hostname
+    copy:
+      content: "{{ clean_hostname }}\n"
+      dest: "/etc/hostname"
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Add new hostname to hosts file
+    lineinfile:
+      path: /etc/hosts
+      line: "127.0.0.1		{{ clean_hostname }}"
+      create: yes
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Remove old hostname from hosts file
+    lineinfile:
+      path: /etc/hosts
+      regexp: "^127\.0\.0\.1 *{{ old_hostname.stdout }}$"
+      state: absent
+    become: true
+    become_method: sudo
+    become_user: root
+
+  - name: Reboot to apply new hostname
+    reboot:
