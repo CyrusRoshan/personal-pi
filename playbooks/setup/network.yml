@@ -1,6 +1,6 @@
 ---
 - name: Network configuration
-  hosts: pis
+  hosts: all
   tasks:
 
   - name: Clean inventory hostname
@@ -35,7 +35,7 @@
   - name: Remove old hostname from hosts file
     lineinfile:
       path: /etc/hosts
-      regexp: "^127\.0\.0\.1 *{{ old_hostname.stdout }}$"
+      regexp: "^127.0.0.1 *{{ old_hostname.stdout }}$"
       state: absent
     become: true
     become_method: sudo

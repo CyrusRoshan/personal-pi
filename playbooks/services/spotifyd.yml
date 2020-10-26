@@ -1,9 +1,9 @@
 ---
-- name: Install spotifyd (and TODO shairport-sync)
-  hosts: pis
+- name: Install spotifyd
+  hosts: red_and_white_pi
   tasks:
 
-  - name: Install deps
+  - name: Install spotifyd download deps
     apt:
       pkg:
         - wget
@@ -70,7 +70,7 @@
         [Service]
         ExecStart=/usr/bin/spotifyd --no-daemon --config-path="/etc/xdg/spotifyd"
         Restart=always
-        RestartSec=12
+        RestartSec=3
 
         [Install]
         WantedBy=default.target
@@ -94,9 +94,10 @@
         mixer = PCM
         volume-controller = alsa # or alsa_linear, or softvol
         #onevent = command_run_on_playback_event
-        device_name = "{{ inventory_hostname | replace('_',' ') | capitalize }}"
+        device_name = {{ inventory_hostname | replace('_','-') | capitalize }}
         bitrate = 320
         # cache_path = cache_directory
+        initial_volume = 70
         volume-normalisation = true
         normalisation-pregain = -10
       dest: "/etc/xdg/spotifyd"
@@ -118,13 +119,11 @@
   - name: Get default amixer control
     shell: "amixer scontrols | grep -o \"'[^']*'\" | head -n 1"
     register: quoted_amixer_control
-    when: spotifyd_systemd.changed
 
-  - name: Set volume to 100% and save on boot
+  - name: Set volume and save to persist restarts
     shell: >
-      amixer sset {{ quoted_amixer_control.stdout }} 100% &&
+      amixer sset {{ quoted_amixer_control.stdout }} "100%" &&
       /usr/sbin/alsactl store
-    when: quoted_amixer_control.stdout
     become: true
     become_method: sudo
     become_user: root

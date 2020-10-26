@@ -1,6 +1,6 @@
 ---
 - name: Setup SSH
-  hosts: pre_setup_pis
+  hosts: all
   tasks:
 
   - name: Add current user to pi
@@ -29,10 +29,10 @@
     become_method: sudo
     become_user: root
 
-  - name: Disable password auth for SSH
+  - name: Disable password auth for SSH (this will apply after reboot, make sure it works)
     lineinfile:
       path: /etc/ssh/sshd_config
-      line: PasswordAuthentication=no
+      line: PasswordAuthentication no
       create: yes
     become: true
     become_method: sudo

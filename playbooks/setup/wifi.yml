@@ -1,6 +1,6 @@
 ---
 - name: Setup Wifi
-  hosts: pre_setup_pis
+  hosts: all
   tasks:
 
   - name: Get wifi info from env

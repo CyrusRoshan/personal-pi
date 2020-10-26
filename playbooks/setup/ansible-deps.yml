@@ -1,6 +1,6 @@
 ---
 - name: Install ansible dependencies
-  hosts: pre_setup_pis
+  hosts: all
   tasks:
 
   - name: Check for presence of python-apt
