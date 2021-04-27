@@ -2,93 +2,93 @@
 - name: Set up wifi printing via CUPS
   hosts: red_and_white_pi
   tasks:
-  # Note: manually run hp-setup afterwards to configure
-  # Visit IP:631 to configure CUPS further if needed
+    # Note: manually run hp-setup afterwards to configure
+    # Visit IP:631 to configure CUPS further if needed
 
-  - name: Install cups and HP dependencies
-    apt:
-      pkg:
-        - cups
-        - printer-driver-hpijs
-        - hplip
-      state: present
-    become: true
-    become_method: sudo
-    become_user: root
+    - name: Install cups and HP dependencies
+      apt:
+        pkg:
+          - cups
+          - printer-driver-hpijs
+          - hplip
+        state: present
+      become: true
+      become_method: sudo
+      become_user: root
 
-  - name: Add cups config
-    copy:
-      content: |
-        # From https://serverfault.com/questions/836266/how-can-i-enable-remote-access-to-the-admin-page-in-cups
-        # Disable cups internal logging - use logrotate instead
-        MaxLogSize 0
+    - name: Add cups config
+      copy:
+        content: |
+          # From https://serverfault.com/questions/836266/how-can-i-enable-remote-access-to-the-admin-page-in-cups
+          # Disable cups internal logging - use logrotate instead
+          MaxLogSize 0
 
-        # Log general information in error_log - change "warn" to "debug"
-        # for troubleshooting...
-        LogLevel warn
-        #PageLogFormat
+          # Log general information in error_log - change "warn" to "debug"
+          # for troubleshooting...
+          LogLevel warn
+          #PageLogFormat
 
-        Listen /run/cups/cups.sock
-        Listen 0.0.0.0:631
-        Port 631
+          Listen /run/cups/cups.sock
+          Listen 0.0.0.0:631
+          Port 631
 
-        # Show shared printers on the local network.
-        Browsing On
-        BrowseLocalProtocols dnssd
+          # Show shared printers on the local network.
+          Browsing On
+          BrowseLocalProtocols dnssd
 
-        # Default authentication type, when authentication is required...
-        DefaultAuthType Basic
+          # Default authentication type, when authentication is required...
+          DefaultAuthType Basic
 
-        # Web interface setting...
-        WebInterface Yes
+          # Web interface setting...
+          WebInterface Yes
 
-        # Restrict access to the server...
-        # This config allow anyone access to the WUI
-        <Location />
-          Order allow,deny
-          Allow all
-        </Location>
+          # Restrict access to the server...
+          # This config allow anyone access to the WUI
+          <Location />
+            Order allow,deny
+            Allow all
+          </Location>
 
-        # Restrict access to the admin pages...
-        # Allows anyone to try and access admin pages.
-        # Any local user's credentials will be accepted
-        <Location /admin>
-          AuthType Basic
-          Require valid-user
-          Allow all
-          Order allow,deny
-        </Location>
+          # Restrict access to the admin pages...
+          # Allows anyone to try and access admin pages.
+          # Any local user's credentials will be accepted
+          <Location /admin>
+            AuthType Basic
+            Require valid-user
+            Allow all
+            Order allow,deny
+          </Location>
 
-        # Restrict access to configuration files...
-        # Any local user's credentials will be accepted
-        <Location /admin/conf>
-          AuthType Basic
-          Require valid-user
-          Allow all
-          Order allow,deny
-        </Location>
+          # Restrict access to configuration files...
+          # Any local user's credentials will be accepted
+          <Location /admin/conf>
+            AuthType Basic
+            Require valid-user
+            Allow all
+            Order allow,deny
+          </Location>
 
-        # Restrict access to log files...
-        # Any local user's credentials will be accepted
-        <Location /admin/log>
-          AuthType Basic
-          Require valid-user
-          Allow all
-          Order allow,deny
-        </Location>
+          # Restrict access to log files...
+          # Any local user's credentials will be accepted
+          <Location /admin/log>
+            AuthType Basic
+            Require valid-user
+            Allow all
+            Order allow,deny
+          </Location>
 
-        Browsing On
-      dest: "/etc/cups/cupsd.conf"
-      mode: "0644"
-    become: true
-    become_method: sudo
-    become_user: root
+          Browsing On
+        dest: "/etc/cups/cupsd.conf"
+        mode: "0644"
+      become: true
+      become_method: sudo
+      become_user: root
 
-  - name: Make sure cups starts on boot
-    systemd:
-      enabled: yes
-      state: restarted
-      name: cups
-    become: true
-    become_method: sudo
-    become_user: root
+    - name: Make sure cups starts on boot
+      systemd:
+        enabled: yes
+        state: restarted
+        name: cups
+      become: true
+      become_method: sudo
+      become_user: root

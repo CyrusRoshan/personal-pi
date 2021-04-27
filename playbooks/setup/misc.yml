@@ -2,12 +2,11 @@
 - name: Misc. setup
   hosts: pre_setup_pis
   tasks:
-
-  - name: Add current user to 'systemd-journal' group for log viewing
-    user:
-      name: "{{ ansible_user_id }}"
-      groups: systemd-journal
-      append: yes
-    become: true
-    become_method: sudo
-    become_user: root
+    - name: Add current user to 'systemd-journal' group for log viewing
+      user:
+        name: "{{ ansible_user_id }}"
+        groups: systemd-journal
+        append: yes
+      become: true
+      become_method: sudo
+      become_user: root

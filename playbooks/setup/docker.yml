@@ -2,28 +2,27 @@
 - name: Install Docker dependencies
   hosts: none
   tasks:
+    - name: Check if docker is installed
+      shell: which docker
+      register: docker_exists
+      changed_when: false
+      failed_when: false
 
-  - name: Check if docker is installed
-    shell: which docker
-    register: docker_exists
-    changed_when: false
-    failed_when: false
+    - name: Fully remove docker
+      shell: apt remove docker-ce
+      become: true
+      become_method: sudo
+      become_user: root
+      when: docker_exists.rc == 1
 
-  - name: Fully remove docker
-    shell: apt remove docker-ce
-    become: true
-    become_method: sudo
-    become_user: root
-    when: docker_exists.rc == 1
+    - name: Install docker
+      shell:
+        cmd: curl -fsSL https://get.docker.com | sh && which docker
+        warn: false
+      when: docker_exists.rc == 1
 
-  - name: Install docker
-    shell:
-      cmd: curl -fsSL https://get.docker.com | sh && which docker
-      warn: false
-    when: docker_exists.rc == 1
-
-  - name: Install python libs for docker and docker-compose python libs
-    pip:
-      name:
-        - docker
-        - docker-compose
+    - name: Install python libs for docker and docker-compose python libs
+      pip:
+        name:
+          - docker
+          - docker-compose

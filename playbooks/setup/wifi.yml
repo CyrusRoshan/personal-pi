@@ -2,29 +2,28 @@
 - name: Setup Wifi
   hosts: all
   tasks:
+    - name: Get wifi info from env
+      set_fact:
+        wifi_ssid: "{{ lookup('env', 'WIFI_SSID') }}"
+        wifi_password: "{{ lookup('env', 'WIFI_PASSWORD') }}"
 
-  - name: Get wifi info from env
-    set_fact:
-     wifi_ssid: "{{ lookup('env', 'WIFI_SSID') }}"
-     wifi_password: "{{ lookup('env', 'WIFI_PASSWORD') }}"
+    - name: Make sure wifi info is set
+      fail:
+        msg: "Wifi ssid ({{ wifi_ssid }}) and password ({{ wifi_password }}) were not both set"
+      when: (wifi_ssid|length == 0) or (wifi_password|length == 0)
 
-  - name: Make sure wifi info is set
-    fail:
-      msg: "Wifi ssid ({{ wifi_ssid }}) and password ({{ wifi_password }}) were not both set"
-    when: (wifi_ssid|length == 0) or (wifi_password|length == 0)
+    - name: Add Wifi configuration
+      copy:
+        content: |
+          ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+          update_config=1
 
-  - name: Add Wifi configuration
-    copy:
-      content: |
-        ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-        update_config=1
-
-        network={
-          ssid="{{ wifi_ssid }}"
-          psk="{{ wifi_password }}"
-        }
-      dest: "/etc/wpa_supplicant/wpa_supplicant.conf"
-      mode: "0600"
-    become: true
-    become_method: sudo
-    become_user: root
+          network={
+            ssid="{{ wifi_ssid }}"
+            psk="{{ wifi_password }}"
+          }
+        dest: "/etc/wpa_supplicant/wpa_supplicant.conf"
+        mode: "0600"
+      become: true
+      become_method: sudo
+      become_user: root

@@ -5,50 +5,48 @@
   become_method: sudo
   become_user: root
   tasks:
+    - name: Update and install git, zsh and powerline
+      apt:
+        update_cache: yes
+        pkg:
+          - git
+          - zsh
+          - powerline
+          - fonts-powerline
 
-  - name: Update and install git, zsh and powerline
-    apt:
-      update_cache: yes
-      pkg:
-      - git
-      - zsh
-      - powerline
-      - fonts-powerline
+    - name: Clone oh-my-zsh
+      git:
+        repo: https://github.com/robbyrussell/oh-my-zsh.git
+        dest: "/home/{{ lookup('env', 'USER') }}/.oh-my-zsh"
+      register: clone_oh_my_zsh
 
+    - name: Copy the oh-my-zsh template to use as the zshrc
+      copy:
+        src: "/home/{{ lookup('env', 'USER') }}/.oh-my-zsh/templates/zshrc.zsh-template"
+        dest: "/home/{{ lookup('env', 'USER') }}/.zshrc"
+        remote_src: yes
 
-  - name: Clone oh-my-zsh
-    git:
-      repo: https://github.com/robbyrussell/oh-my-zsh.git
-      dest: "/home/{{ lookup('env', 'USER') }}/.oh-my-zsh"
-    register: clone_oh_my_zsh
+    - debug:
+        msg: "/home/{{ lookup('env', 'USER') }}"
 
-  - name: Copy the oh-my-zsh template to use as the zshrc
-    copy:
-      src: "/home/{{ lookup('env', 'USER') }}/.oh-my-zsh/templates/zshrc.zsh-template"
-      dest: "/home/{{ lookup('env', 'USER') }}/.zshrc"
-      remote_src: yes
+    - name: Change theme to agnoster
+      replace:
+        path: "/home/{{ lookup('env', 'USER') }}/.zshrc"
+        regexp: '^.*ZSH_THEME="robbyrussell".*$'
+        replace: 'ZSH_THEME="agnoster"'
+        backup: no
 
-  - debug:
-      msg: "/home/{{ lookup('env', 'USER') }}"
+    - name: Disable oh-my-zsh auto-update
+      lineinfile:
+        path: "/home/{{ lookup('env', 'USER') }}/.zshrc"
+        line: "DISABLE_UPDATE_PROMPT=true"
+      register: disable_auto_update
 
-  - name: Change theme to agnoster
-    replace:
-      path: "/home/{{ lookup('env', 'USER') }}/.zshrc"
-      regexp: '^.*ZSH_THEME="robbyrussell".*$'
-      replace: 'ZSH_THEME="agnoster"'
-      backup: no
+    - name: Get zsh path
+      shell: which zsh
+      register: zsh_path
 
-  - name: Disable oh-my-zsh auto-update
-    lineinfile:
-      path: "/home/{{ lookup('env', 'USER') }}/.zshrc"
-      line: 'DISABLE_UPDATE_PROMPT=true'
-    register: disable_auto_update
-
-  - name: Get zsh path
-    shell: which zsh
-    register: zsh_path
-
-  - name: Change default shell to zsh
-    user:
-      name: "{{ lookup('env', 'USER') }}"
-      shell: "{{ zsh_path.stdout }}"
+    - name: Change default shell to zsh
+      user:
+        name: "{{ lookup('env', 'USER') }}"
+        shell: "{{ zsh_path.stdout }}"
